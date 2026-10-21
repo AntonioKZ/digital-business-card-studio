@@ -1,0 +1,2 @@
+import {getIdentity,fail} from './_lib/auth.js';import {sql,userFromAuth} from './_lib/db.js';
+export default async function handler(req,res){if(req.method!=='GET')return res.status(405).end();try{const user=await userFromAuth(await getIdentity(req));const rows=await sql('SELECT o.id,o.name,o.slug,o.branding,m.role FROM organizations o JOIN memberships m ON m.organization_id=o.id WHERE m.user_id=$1 ORDER BY o.name',[user.id]);return res.json({organizations:rows});}catch(e){return fail(res,e)}}
