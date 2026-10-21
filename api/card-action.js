@@ -16,9 +16,9 @@ export default async function handler(req,res){
   if(!cards.rowCount)throw Object.assign(new Error('Card inesistente'),{status:404});
   const card=cards.rows[0];
   const membership=await client.query('SELECT role FROM memberships WHERE organization_id=$1 AND user_id=$2',[card.organization_id,uid]);
-  if(!membership.rowCount)throw Object.assign(new Error('Accesso negato'),{status:403});
+  const platform=await client.query('SELECT 1 FROM platform_admins WHERE user_id=$1',[uid]);if(!membership.rowCount&&!platform.rowCount)throw Object.assign(new Error('Accesso negato'),{status:403});
   if(action==='submit'&&card.owner_id!==uid)throw Object.assign(new Error('Solo il proprietario può inviare la card'),{status:403});
-  if(action!=='submit'&&membership.rows[0].role!=='org_admin')throw Object.assign(new Error('Solo amministratori aziendali'),{status:403});
+  if(action!=='submit'&&membership.rows[0]?.role!=='org_admin'&&!platform.rowCount)throw Object.assign(new Error('Solo amministratori aziendali'),{status:403});
   const states={submit:['draft','pending'],approve:['pending','published'],reject:['pending','rejected'],suspend:['published','suspended']};
   const [from,to]=states[action];
   if(card.status!==from)throw Object.assign(new Error('Stato non compatibile'),{status:409});
