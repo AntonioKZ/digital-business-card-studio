@@ -72,6 +72,22 @@ export default async function handler(req,res) {
     const user = await userFromAuth(subject);
     if (typeof organization_id !== 'string' || !uuid.test(organization_id)) throw problem(400,'Azienda non valida');
     await requireMember(user.id,organization_id,true);
+    if (action === 'list') {
+      const invitations = await sql(`
+        SELECT i.email,i.expires_at,i.accepted_by IS NOT NULL AS accepted,
+          i.expires_at<=now() AS expired,
+          EXISTS (
+            SELECT 1 FROM studio_mail m
+            WHERE m.organization_id=i.organization_id AND m.recipient=i.email
+              AND m.subject='Invito a compilare il biglietto digitale' AND m.sent_at IS NOT NULL
+              AND encode(sha256(convert_to(substring(m.body from '#invito=([A-Za-z0-9_-]{43})'),'UTF8')),'hex')=i.token_hash
+          ) AS sent
+        FROM employee_invitations i
+        WHERE i.organization_id=$1
+        ORDER BY i.expires_at DESC, i.id
+        LIMIT 100`,[organization_id]);
+      return res.json({invitations});
+    }
     if (action === 'queue') {
       const pending = await sql('SELECT id,recipient,subject FROM studio_mail WHERE organization_id=$1 AND sent_at IS NULL ORDER BY created_at LIMIT 100',[organization_id]);
       return res.json({pending});

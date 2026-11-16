@@ -15,9 +15,14 @@ const css=doc.createElement('style');css.textContent='html,body{height:auto!impo
 for(const script of [...doc.querySelectorAll('script')])script.remove();doc.title=(d.name||'Biglietto')+' · '+(d.company||'');return '<!doctype html>'+doc.documentElement.outerHTML}
 async function start(){
   const preview=params.get('preview')==='1';
+  const example=params.get('example')==='1';
   let card;
   let url=location.href;
-  if(preview){
+  if(example){
+    card={data:{name:'Mario Rossi',role:'Tecnico di commessa',company:'Meridionale Impianti S.p.A.',
+      email:'mario.rossi@example.com',phone:'+39 02 0000 0000',website:'https://www.merimp.com',
+      address:'Via Senatore Simonetta 26/D, 20867 Caponago (MB), Italia',primary:'#102b53',accent:'#147ea4'}};
+  }else if(preview){
     const organization=params.get('organization_id');
     const id=params.get('card_id');
     const token=sessionStorage.getItem('studio-jwt');
@@ -38,7 +43,8 @@ async function start(){
   const data={...card.data,company:card.data?.company||card.organization_name||''};
   const doc=new DOMParser().parseFromString(await template.text(),'text/html');
   const markup=apply(doc,data,url);
-  if(preview) doc.querySelector('.qrpanel')?.remove();
+  if(preview||example) doc.querySelector('.qrpanel')?.remove();
+  if(example) for(const link of doc.querySelectorAll('a[href]')) link.removeAttribute('href');
   frame.addEventListener('load',()=>{
     const inner=frame.contentDocument;
     if(!inner)return;
@@ -46,12 +52,12 @@ async function start(){
     resize();
     new ResizeObserver(resize).observe(inner.querySelector('.card')||inner.body);
   });
-  frame.srcdoc=preview?'<!doctype html>'+doc.documentElement.outerHTML:markup;
+  frame.srcdoc=preview||example?'<!doctype html>'+doc.documentElement.outerHTML:markup;
   frame.hidden=false;
   document.title=(data.name||'Biglietto digitale')+' · '+data.company;
-  status.hidden=!preview;
+  status.hidden=!preview||example;
   if(preview)status.textContent='Anteprima privata della revisione '+card.revision;
-  document.getElementById('tools').hidden=preview;
+  document.getElementById('tools').hidden=preview||example;
 }
 document.getElementById('copy').onclick=async()=>{await navigator.clipboard.writeText(location.href);document.getElementById('copy').textContent='Link copiato'};
 document.getElementById('share').onclick=async()=>{if(navigator.share)await navigator.share({title:document.title,url:location.href});else await navigator.clipboard.writeText(location.href)};
