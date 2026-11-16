@@ -1,6 +1,6 @@
 import {sql} from './db.js';
 
-export const studioOrigin = 'https://digital-business-card-studio.vercel.app';
+export const studioOrigin = 'https://mi-bussiness-card.vercel.app';
 
 export async function queueMail(client, organization, recipient, subject, body) {
   if (!recipient || recipient.endsWith('.example')) return null;
