@@ -19,6 +19,7 @@ async function start(){
   let card;
   let url=location.href;
   if(example){
+    url=new URL('/card.html?example=1',location.origin).href;
     card={data:{name:'Mario Rossi',role:'Tecnico di commessa',company:'Meridionale Impianti S.p.A.',
       email:'mario.rossi@example.com',phone:'+39 02 0000 0000',website:'https://www.merimp.com',
       address:'Via Senatore Simonetta 26/D, 20867 Caponago (MB), Italia',primary:'#102b53',accent:'#147ea4'}};
@@ -43,7 +44,7 @@ async function start(){
   const data={...card.data,company:card.data?.company||card.organization_name||''};
   const doc=new DOMParser().parseFromString(await template.text(),'text/html');
   const markup=apply(doc,data,url);
-  if(preview||example) doc.querySelector('.qrpanel')?.remove();
+  if(preview&&!example) doc.querySelector('.qrpanel')?.remove();
   if(example) for(const link of doc.querySelectorAll('a[href]')) link.removeAttribute('href');
   frame.addEventListener('load',()=>{
     const inner=frame.contentDocument;
