@@ -84,7 +84,7 @@
 <button id="refreshInvites" type="button">Aggiorna inviti</button>
 <ul id="invitationStatus" aria-live="polite"></ul>
 <button id="refreshMail" type="button">Email in attesa</button><ul id="pendingMail"></ul>
-</section></div></section><p><a href="/" class="btn">← Torna all'editor live</a></p></main><script type="module">import {createAuthClient} from 'https://esm.sh/@neondatabase/auth?bundle';const authClient=createAuthClient('https://ep-damp-pine-ba676nsg.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth');let jwt='',orgs=[];const $=id=>document.getElementById(id);function message(s,bad=false){$('message').textContent=s;$('message').className=bad?'error':'muted'}async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{'Authorization':'Bearer '+jwt,'Content-Type':'application/json',...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok)throw Error(data.error||'Errore HTTP '+r.status);return data}async function completeSession(token){jwt=token;
+</section></div></section><p><a href="/" class="btn">← Torna all'editor live</a></p></main><script type="module">import {createAuthClient} from 'https://esm.sh/@neondatabase/auth?bundle';const authClient=createAuthClient('https://ep-damp-pine-ba676nsg.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth');let jwt='',orgs=[];const $=id=>document.getElementById(id);function message(s,bad=false){$('message').textContent=s;$('message').className=bad?'error':'muted'}async function api(url,opts={}){const r=await fetch(url,{...opts,headers:{'Authorization':'Bearer '+jwt,'Content-Type':'application/json',...(opts.headers||{})}});const data=await r.json().catch(()=>({}));if(!r.ok)throw Error(data.error||'Errore HTTP '+r.status);return data}async function completeSession(token){jwt=token;sessionStorage.removeItem('studio-signed-out');
   if (pendingInvite) {
     const {card}=await api('/api/invitations',{method:'POST',body:JSON.stringify({action:'accept',token:pendingInvite})});
     sessionStorage.setItem('studio-jwt',token);
@@ -93,7 +93,7 @@
     return;
   }
   sessionStorage.setItem('studio-jwt',token);const data=await api('/api/organizations');orgs=data.organizations||[];$('work').hidden=false;$('org').replaceChildren();for(const o of orgs){const opt=document.createElement('option');opt.value=o.id;opt.textContent=o.name;$('org').append(opt)}if (orgs.some(org=>org.id===requestedOrg)) $('org').value=requestedOrg;
-$('loginPanel').hidden=true;message('Sessione verificata.');if(orgs.length===1&&orgs[0].role==='member'){const r=await api('/api/cards?organization_id='+encodeURIComponent(orgs[0].id));if(r.cards?.length){location.replace('/?organization_id='+encodeURIComponent(orgs[0].id)+'&card_id='+encodeURIComponent(r.cards[0].id));return}}await loadCards()}async function recoverGoogleSession(){try{const saved=sessionStorage.getItem('studio-jwt');if(saved){try{await completeSession(saved);return}catch{sessionStorage.removeItem('studio-jwt')}}const session=await authClient.getSession();if(session?.error)throw Error(session.error.message||'Sessione non valida');if(!session?.data?.user){message('Premi Continua con Google per accedere.');return}let token='';let tokenIssue='';try{const response=await authClient.token();token=response?.data?.token||response?.token||'';tokenIssue=response?.error?.message||''}catch(e){tokenIssue=e.message}if(!token){const authUrl='https://ep-damp-pine-ba676nsg.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth/token';const response=await fetch(authUrl,{credentials:'include'});const result=await response.json().catch(()=>({}));if(!response.ok)throw Error('Neon Auth /token: HTTP '+response.status+(result.message?' · '+result.message:''));token=result.token||result.data?.token||''}if(!token)throw Error('JWT non restituito da Neon Auth'+(tokenIssue?' · '+tokenIssue:''));await completeSession(token)}catch(e){message('Accesso Google non completato: '+e.message,true)}}async function connect(){try{const login=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('loginEmail').value.trim(),password:$('loginPassword').value})});const auth=await login.json();if(!login.ok)throw Error(auth.error||'Accesso non riuscito');$('loginPassword').value='';await completeSession(auth.token)}catch(e){jwt='';$('work').hidden=true;$('loginPanel').hidden=false;message(e.message,true)}}async function loadCards(){const org=orgs.find(x=>x.id===$('org').value);if(!org)return;$('result').textContent='';$('role').textContent='Ruolo: '+(org.role==='platform_admin'?'Super amministratore':org.role==='org_admin'?'Amministratore aziendale':'Dipendente');const manager=org.role!=='member';
+$('loginPanel').hidden=true;message('Sessione verificata.');if(orgs.length===1&&orgs[0].role==='member'){const r=await api('/api/cards?organization_id='+encodeURIComponent(orgs[0].id));if(r.cards?.length){location.replace('/?organization_id='+encodeURIComponent(orgs[0].id)+'&card_id='+encodeURIComponent(r.cards[0].id));return}}await loadCards()}async function recoverGoogleSession(){if(sessionStorage.getItem('studio-signed-out')){message('Sessione chiusa.');return}try{const saved=sessionStorage.getItem('studio-jwt');if(saved){try{await completeSession(saved);return}catch{sessionStorage.removeItem('studio-jwt')}}const session=await authClient.getSession();if(session?.error)throw Error(session.error.message||'Sessione non valida');if(!session?.data?.user){message('Premi Continua con Google per accedere.');return}let token='';let tokenIssue='';try{const response=await authClient.token();token=response?.data?.token||response?.token||'';tokenIssue=response?.error?.message||''}catch(e){tokenIssue=e.message}if(!token){const authUrl='https://ep-damp-pine-ba676nsg.neonauth.c-8.eu-central-1.aws.neon.tech/neondb/auth/token';const response=await fetch(authUrl,{credentials:'include'});const result=await response.json().catch(()=>({}));if(!response.ok)throw Error('Neon Auth /token: HTTP '+response.status+(result.message?' · '+result.message:''));token=result.token||result.data?.token||''}if(!token)throw Error('JWT non restituito da Neon Auth'+(tokenIssue?' · '+tokenIssue:''));await completeSession(token)}catch(e){message('Accesso Google non completato: '+e.message,true)}}async function connect(){try{const login=await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:$('loginEmail').value.trim(),password:$('loginPassword').value})});const auth=await login.json();if(!login.ok)throw Error(auth.error||'Accesso non riuscito');$('loginPassword').value='';await completeSession(auth.token)}catch(e){jwt='';$('work').hidden=true;$('loginPanel').hidden=false;message(e.message,true)}}async function loadCards(){const org=orgs.find(x=>x.id===$('org').value);if(!org)return;$('result').textContent='';$('role').textContent='Ruolo: '+(org.role==='platform_admin'?'Super amministratore':org.role==='org_admin'?'Amministratore aziendale':'Dipendente');const manager=org.role!=='member';
 $('inviteTools').hidden=!manager;
 $('dashboardNav').hidden=!manager;
 $('templateExample').hidden=!manager;
@@ -123,7 +123,17 @@ try {
   } finally {
     $('connect').disabled = false;
   }
-});$('googleLogin').onclick=async()=>{try{message('Apertura accesso Google…');const result=await authClient.signIn.social({provider:'google',callbackURL:location.origin+'/admin.html'});if(result?.error)throw Error(result.error.message||'Autenticazione Google non disponibile')}catch(e){message('Accesso Google: '+e.message,true)}};$('logout').onclick=()=>{jwt='';sessionStorage.removeItem('studio-jwt');$('loginPassword').value='';$('work').hidden=true;$('loginPanel').hidden=false;message('Sessione chiusa.')};$('org').onchange=loadCards;$('dashboardLogout').onclick=()=>$('logout').click();
+});$('googleLogin').onclick=async()=>{try{sessionStorage.removeItem('studio-signed-out');message('Apertura accesso Google…');const result=await authClient.signIn.social({provider:'google',callbackURL:location.origin+'/admin.html'});if(result?.error)throw Error(result.error.message||'Autenticazione Google non disponibile')}catch(e){message('Accesso Google: '+e.message,true)}};async function signOutStudio(){
+  jwt='';
+  sessionStorage.removeItem('studio-jwt');
+  sessionStorage.setItem('studio-signed-out','1');
+  $('loginPassword').value='';
+  $('work').hidden=true;
+  $('loginPanel').hidden=false;
+  message('Sessione chiusa.');
+  try { await authClient.signOut(); } catch { /* L’accesso automatico resta disattivato in questa scheda. */ }
+}
+$('logout').onclick=signOutStudio;$('org').onchange=loadCards;$('dashboardLogout').onclick=()=>$('logout').click();
 for (const input of document.querySelectorAll('#loginPanel input[type="password"]')) {
   const toggle = document.createElement('button');
   toggle.type = 'button';
@@ -339,7 +349,11 @@ handleAccountForm('reset', async fields => {
   message('Password aggiornata. Accedi con la nuova password.');
 }, 'Impossibile aggiornare la password. Riprova o richiedi un nuovo link di recupero.');
 
-if (accountURL.searchParams.get('mode') === 'reset') {
+if (accountURL.searchParams.get('logout') === '1') {
+  accountURL.searchParams.delete('logout');
+  history.replaceState(null,'',accountURL.pathname+accountURL.search);
+  void signOutStudio();
+} else if (accountURL.searchParams.get('mode') === 'reset') {
   history.replaceState(null, '', accountURL.pathname);
   if (resetToken && !accountURL.searchParams.has('error')) {
     showAccountView('reset');
